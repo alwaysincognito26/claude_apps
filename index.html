@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Sopranos Quiz</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Lato:wght@300;400;700&display=swap');
+
+    :root {
+      --bg:      #0e0b07;
+      --surface: #1a1410;
+      --card:    #221c14;
+      --border:  #3a2e1e;
+      --gold:    #c8a84b;
+      --gold-lt: #e8c96a;
+      --red:     #8b1a1a;
+      --cream:   #f0e8d5;
+      --muted:   #8a7a60;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--cream);
+      font-family: 'Lato', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background-image:
+        radial-gradient(ellipse at 20% 20%, rgba(200,168,75,.04) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(139,26,26,.06) 0%, transparent 50%);
+    }
+
+    .screen { display: none; width: 100%; max-width: 680px; }
+    .screen.active { display: flex; flex-direction: column; align-items: center; }
+
+    /* ── BRAND ── */
+    .brand { text-align: center; margin-bottom: 36px; }
+    .brand-eyebrow { font-size: 11px; letter-spacing: 4px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .brand-title { font-family: 'Playfair Display', serif; font-size: clamp(2.2rem,6vw,3.4rem); font-weight: 900; color: var(--gold); line-height: 1; text-shadow: 0 2px 20px rgba(200,168,75,.3); }
+    .brand-sub { font-size: 13px; color: var(--muted); margin-top: 6px; letter-spacing: 1px; }
+    .divider { width: 60px; height: 2px; background: linear-gradient(90deg, transparent, var(--gold), transparent); margin: 18px auto; }
+
+    /* ── WELCOME ── */
+    #welcome { text-align: center; }
+    .welcome-card { background: var(--card); border: 1px solid var(--border); border-radius: 4px; padding: 36px 40px; width: 100%; max-width: 540px; }
+    .welcome-card p { color: #b8a88a; line-height: 1.8; font-size: 15px; margin-bottom: 14px; }
+    .welcome-card p:last-of-type { margin-bottom: 28px; }
+
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 32px; }
+    .tag { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; padding: 5px 12px; border-radius: 2px; border: 1px solid; }
+    .tag-tv    { color: #7cb8f0; border-color: #3a5a7a; background: rgba(60,90,120,.15); }
+    .tag-sub   { color: #e8a060; border-color: #7a4a20; background: rgba(120,74,32,.15); }
+    .tag-quote { color: #9be09b; border-color: #2a5a2a; background: rgba(42,90,42,.15); }
+    .tag-ep    { color: #e088a0; border-color: #7a2840; background: rgba(120,40,64,.15); }
+    .tag-live  { color: #ffd700; border-color: #b8860b; background: rgba(255,215,0,.12); }
+
+    /* ── BUTTONS ── */
+    .btn { font-family: 'Lato', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; padding: 14px 40px; border: none; border-radius: 2px; cursor: pointer; transition: all .2s; }
+    .btn-primary { background: var(--gold); color: #0e0b07; }
+    .btn-primary:hover { background: var(--gold-lt); transform: translateY(-1px); box-shadow: 0 4px 20px rgba(200,168,75,.35); }
+    .btn-secondary { background: transparent; color: var(--gold); border: 1px solid var(--gold); margin-top: 12px; }
+    .btn-secondary:hover { background: rgba(200,168,75,.1); }
+
+    /* ── QUIZ SCREEN ── */
+    .quiz-header { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 10px; }
+    .quiz-header-left { display: flex; align-items: center; gap: 16px; }
+    .q-counter { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+    .q-score-live { font-size: 12px; color: var(--gold); }
+    .sound-btn { background: transparent; border: 1px solid var(--border); border-radius: 3px; color: var(--muted); cursor: pointer; font-size: 16px; padding: 4px 10px; transition: all .15s; }
+    .sound-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+    .progress-bar-wrap { width: 100%; height: 3px; background: var(--border); border-radius: 2px; margin-bottom: 28px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-lt)); border-radius: 2px; transition: width .4s ease; }
+
+    .question-card { background: var(--card); border: 1px solid var(--border); border-radius: 4px; padding: 32px 36px 28px; width: 100%; margin-bottom: 16px; position: relative; }
+    .q-category { display: inline-block; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; padding: 4px 10px; border-radius: 2px; margin-bottom: 16px; font-weight: 700; }
+    .cat-tv    { color: #7cb8f0; border: 1px solid #3a5a7a; background: rgba(60,90,120,.2); }
+    .cat-sub   { color: #e8a060; border: 1px solid #7a4a20; background: rgba(120,74,32,.2); }
+    .cat-quote { color: #9be09b; border: 1px solid #2a5a2a; background: rgba(42,90,42,.2); }
+    .cat-ep    { color: #e088a0; border: 1px solid #7a2840; background: rgba(120,40,64,.2); }
+    .cat-live  { color: #ffd700; border: 1px solid #b8860b; background: rgba(255,215,0,.15); }
+
+    .live-badge { position: absolute; top: 16px; right: 20px; font-size: 10px; font-weight: 700; letter-spacing: 2px; color: #ffd700; display: flex; align-items: center; gap: 5px; }
+    .live-dot { width: 7px; height: 7px; border-radius: 50%; background: #ff4040; animation: pulse 1.2s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+
+    .loading-overlay { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 160px; gap: 16px; }
+    .loading-spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-size: 13px; color: var(--muted); letter-spacing: 1px; }
+
+    .q-text { font-family: 'Playfair Display', serif; font-size: clamp(1.1rem,3vw,1.35rem); line-height: 1.5; color: var(--cream); margin-bottom: 8px; }
+    .q-hint { font-size: 13px; color: var(--muted); font-style: italic; margin-bottom: 24px; }
+
+    .options { display: flex; flex-direction: column; gap: 10px; }
+    .option-btn { display: flex; align-items: center; gap: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 3px; padding: 14px 18px; cursor: pointer; transition: all .15s; text-align: left; color: var(--cream); font-family: 'Lato', sans-serif; font-size: 14px; line-height: 1.4; }
+    .option-btn:hover:not(:disabled) { border-color: var(--gold); background: rgba(200,168,75,.08); }
+    .option-btn:disabled { cursor: default; }
+    .option-letter { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--muted); transition: all .15s; }
+    .option-btn:hover:not(:disabled) .option-letter { border-color: var(--gold); color: var(--gold); }
+    .option-btn.correct { border-color: #4a9a4a; background: rgba(42,90,42,.25); }
+    .option-btn.correct .option-letter { background: #2d6a2d; border-color: #4a9a4a; color: #9be09b; }
+    .option-btn.wrong { border-color: #9a2a2a; background: rgba(120,40,40,.25); }
+    .option-btn.wrong .option-letter { background: #7a1f1f; border-color: #9a2a2a; color: #e08080; }
+    .option-btn.reveal { border-color: #4a9a4a; background: rgba(42,90,42,.12); opacity: .7; }
+    .option-btn.reveal .option-letter { border-color: #4a9a4a; color: #9be09b; }
+
+    .feedback { display: none; padding: 12px 18px; border-radius: 3px; font-size: 14px; margin-top: 4px; line-height: 1.5; }
+    .feedback.correct { display: block; background: rgba(42,90,42,.3); border: 1px solid #4a9a4a; color: #9be09b; }
+    .feedback.wrong { display: block; background: rgba(120,40,40,.3); border: 1px solid #9a2a2a; color: #e08080; }
+
+    .next-wrap { display: flex; justify-content: flex-end; margin-top: 20px; width: 100%; }
+
+    /* ── RESULTS ── */
+    #results { text-align: center; }
+    .result-card { background: var(--card); border: 1px solid var(--border); border-radius: 4px; padding: 40px; width: 100%; max-width: 520px; }
+    .result-rank { font-family: 'Playfair Display', serif; font-size: clamp(1.6rem,5vw,2.2rem); font-weight: 900; color: var(--gold); margin-bottom: 6px; }
+    .result-rank-label { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 20px; }
+    .result-score-big { font-family: 'Playfair Display', serif; font-size: 5rem; font-weight: 900; color: var(--cream); line-height: 1; }
+    .result-score-denom { font-size: 1.5rem; color: var(--muted); }
+    .result-desc { color: #b8a88a; font-size: 15px; line-height: 1.7; margin: 22px 0 30px; }
+    .result-breakdown { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 30px; }
+    .breakdown-item { background: var(--surface); border: 1px solid var(--border); border-radius: 3px; padding: 12px; text-align: center; }
+    .breakdown-cat { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+    .breakdown-score { font-size: 18px; font-weight: 700; color: var(--cream); }
+    .breakdown-score span { font-size: 13px; color: var(--muted); }
+    .btn-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .gun-icon { color: var(--gold); font-size: 2rem; margin-bottom: 12px; opacity: .7; }
+
+    .daily-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); letter-spacing: 1px; margin-bottom: 20px; }
+    .daily-badge span { color: var(--gold); font-weight: 700; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════ WELCOME ═══════════════════ -->
+<div id="welcome" class="screen active">
+  <div class="brand">
+    <div class="brand-eyebrow">New Jersey's Finest</div>
+    <div class="brand-title">The Sopranos</div>
+    <div class="brand-sub">Are you gonna sit there or are you gonna take the quiz?</div>
+    <div class="divider"></div>
+  </div>
+  <div class="welcome-card">
+    <p>Think you know Tony, Paulie, and the boys? 10 questions — drawn fresh every day from a 30-question bank — test your knowledge of the show <em>and</em> the subreddit.</p>
+    <p>Question 10 is pulled live from <strong style="color:var(--cream)">r/thesopranos</strong> and reflects what the community is actually talking about today.</p>
+    <div class="tags">
+      <span class="tag tag-tv">📺 TV Trivia</span>
+      <span class="tag tag-sub">🌐 Subreddit Culture</span>
+      <span class="tag tag-quote">💬 Quote ID</span>
+      <span class="tag tag-ep">🎬 Episode Matching</span>
+      <span class="tag tag-live">🔴 Live Reddit Q</span>
+    </div>
+    <button class="btn btn-primary" onclick="startQuiz()">Start Today's Quiz</button>
+  </div>
+</div>
+
+<!-- ═══════════════════ QUIZ ═══════════════════ -->
+<div id="quiz" class="screen">
+  <div class="brand" style="margin-bottom:16px">
+    <div class="brand-title" style="font-size:1.6rem">The Sopranos Quiz</div>
+  </div>
+
+  <div class="quiz-header">
+    <div class="quiz-header-left">
+      <span class="q-counter" id="q-counter">Question 1 of 10</span>
+      <span class="q-score-live" id="q-score-live">Score: 0</span>
+    </div>
+    <button class="sound-btn" id="sound-btn" onclick="toggleSound()" title="Toggle sound">🔊</button>
+  </div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="progress-bar" style="width:0%"></div>
+  </div>
+
+  <div class="question-card" id="question-card">
+    <div id="q-category" class="q-category cat-tv">TV Trivia</div>
+    <div id="live-badge" class="live-badge" style="display:none"><div class="live-dot"></div> LIVE</div>
+    <div id="q-text" class="q-text"></div>
+    <div id="q-hint" class="q-hint"></div>
+    <div class="options" id="options"></div>
+    <div class="feedback" id="feedback"></div>
+  </div>
+
+  <div class="next-wrap">
+    <button class="btn btn-primary" id="next-btn" onclick="nextQuestion()" style="display:none">Next Question →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════ RESULTS ═══════════════════ -->
+<div id="results" class="screen">
+  <div class="brand" style="margin-bottom:24px">
+    <div class="brand-title" style="font-size:1.8rem">The Verdict</div>
+    <div class="divider"></div>
+  </div>
+  <div class="result-card">
+    <div class="gun-icon">🔫</div>
+    <div class="result-rank-label">Your Rank</div>
+    <div class="result-rank" id="result-rank"></div>
+    <div style="margin:16px 0 8px">
+      <span class="result-score-big" id="result-score-num"></span>
+      <span class="result-score-denom">&nbsp;/ 10</span>
+    </div>
+    <div class="result-desc" id="result-desc"></div>
+    <div class="result-breakdown" id="result-breakdown"></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="restartQuiz()">Play Again</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════
+   QUESTION BANK — 30 questions
+═══════════════════════════════════════ */
+const ALL_QUESTIONS = [
+
+  /* ── TV TRIVIA ─────────────────────── */
+  {
+    category:'tv', catLabel:'TV Trivia', catClass:'cat-tv',
+    text:"What triggers Tony Soprano's very first panic attack in Season 1?",
+    hint:"It involves something that had been nesting in his backyard pool…",
+    options:["A car backfiring on the street","A family of ducks leaving his pool","His mother threatening to have him killed","A neighbor's dog getting loose"],
+    correct:1,
+    explanation:"The ducks that had been nesting in Tony's pool fly away, triggering his first panic attack. Dr. Melfi later interprets them as a symbol of Tony's fear of losing his family."
+  },
+  {
+    category:'tv', catLabel:'TV Trivia', catClass:'cat-tv',
+    text:"What is the name of Tony Soprano's psychiatrist?",
+    hint:"She works out of a New Jersey office and really should have referred him out…",
+    options:["Dr. Susan Krakower","Dr. Rachel Levenstein","Dr. Jennifer Melfi","Dr. Barbara Kupferberg"],
+    correct:2,
+    explanation:"Dr. Jennifer Melfi (Lorraine Bracco) treats Tony throughout the entire series, despite the obvious ethical complications of having a mob boss as a patient."
+  },
+  {
+    category:'tv', catLabel:'TV Trivia', catClass:'cat-tv',
+    text:"Tony Soprano leads which New Jersey crime family?",
+    hint:"The family's name does NOT come from Tony's last name…",
+    options:["The Soprano crime family","The Lupertazzi crime family","The DiMeo crime family","The Aprile crime family"],
+    correct:2,
+    explanation:"Tony leads the DiMeo crime family — named after its founder Ercole DiMeo, who is in prison throughout the series. Tony's last name is never the family's official name."
+  },
+  {
+    category:'tv', catLabel:'TV Trivia', catClass:'cat-tv',
+    text:"Which actor portrayed Tony Soprano?",
+    hint:"He passed away in 2013, leaving an enormous void in Hollywood…",
+    options:["Joe Pantoliano","James Gandolfini","Michael Imperioli","Dominic Chianese"],
+    correct:1,
+    explanation:"James Gandolfini played Tony Soprano across all six seasons. His performance is widely considered one of the greatest in television history. He passed away in June 2013."
+  },
+  {
+    category:'tv', catLabel:'TV Trivia', catClass:'cat-tv',
+    text:"What is the name of Tony's famous strip club and crew hangout?",
+    hint:"The name is also an exclamation of delight…",
+    options:["The Lucky Mick's","Club Jersey","The Bada Bing!","The Garden State Lounge"],
+    correct:2,
+    explanation:"The Bada Bing! is Tony's strip club in Lodi, NJ. It doubles as the crew's unofficial headquarters. The exterior was filmed at a real club called Satin Dolls."
+  },
+  {
+    category:'tv', catLabel:'TV Trivia', catClass:'cat-tv',
+    text:"Who kills Adriana La Cerva after she is revealed as an FBI informant?",
+    hint:"He's one of Tony's most loyal capos and a key figure at the Bada Bing…",
+    options:["Tony Soprano","Christopher Moltisanti","Silvio Dante","Paulie Walnuts"],
+    correct:2,
+    explanation:"Silvio Dante drives Adriana into the woods and shoots her in Season 5's 'Long Term Parking.' Christopher, unable to enter witness protection with her, tips Tony off instead. One of the show's most heartbreaking moments."
+  },
+  {
+    category:'tv', catLabel:'TV Trivia', catClass:'cat-tv',
+    text:"What is the full real name of Tony's close friend known as 'Big Pussy'?",
+    hint:"He's one of Tony's oldest friends — and secretly an FBI informant…",
+    options:["Salvatore Bonpensiero","Pussy Aprile","Salvatore Mangano","Peter Bonpensiero"],
+    correct:0,
+    explanation:"Salvatore 'Big Pussy' Bonpensiero is one of Tony's oldest friends. After being revealed as an FBI informant, Tony and the crew shoot him on a boat and dump his body at sea in the Season 2 finale 'Funhouse.'"
+  },
+  {
+    category:'tv', catLabel:'TV Trivia', catClass:'cat-tv',
+    text:"What is the name of Tony's beloved racehorse, allegedly killed by Ralph Cifaretto for insurance money?",
+    hint:"Her death leads to one of the show's most explosive confrontations…",
+    options:["Lucky Lady","Jersey Girl","Pie-O-My","Golden Shoe"],
+    correct:2,
+    explanation:"Pie-O-My was Tony's racehorse. After Ralph allegedly burns the stable to collect insurance money, Tony beats him to death — one of the series' most visceral scenes."
+  },
+  {
+    category:'tv', catLabel:'TV Trivia', catClass:'cat-tv',
+    text:"Which character constantly does an Al Pacino impression — specifically 'Just when I thought I was out, they pull me back in'?",
+    hint:"He runs the Bada Bing and is Tony's consigliere…",
+    options:["Paulie Walnuts","Bobby Baccalieri","Christopher Moltisanti","Silvio Dante"],
+    correct:3,
+    explanation:"Silvio Dante (Steven Van Zandt) frequently does his Al Pacino / Godfather Part III impression. Van Zandt is also known as Bruce Springsteen's guitarist in the E Street Band."
+  },
+  {
+    category:'tv', catLabel:'TV Trivia', catClass:'cat-tv',
+    text:"Who shoots Richie Aprile — and in what unlikely setting?",
+    hint:"The shooter is someone very close to Richie, during an ordinary domestic moment…",
+    options:["Tony Soprano","Paulie Walnuts","Christopher Moltisanti","Janice Soprano"],
+    correct:3,
+    explanation:"Janice Soprano shoots Richie during a dinner argument after he punches her in the face. Tony helps cover it up and dispose of the body — a perfect encapsulation of Sopranos family dynamics."
+  },
+  {
+    category:'tv', catLabel:'TV Trivia', catClass:'cat-tv',
+    text:"What is Christopher Moltisanti's creative passion outside of organized crime?",
+    hint:"He writes a script for it, and it eventually becomes a real film…",
+    options:["Making music","Screenwriting and filmmaking","Painting","Writing crime novels"],
+    correct:1,
+    explanation:"Christopher aspires to be a screenwriter and filmmaker. His script eventually becomes 'Cleaver' — a low-budget slasher film that doubles as a dark portrait of his relationship with Tony."
+  },
+  {
+    category:'tv', catLabel:'TV Trivia', catClass:'cat-tv',
+    text:"Tony brutally beats Ralph Cifaretto in a rage outside the Bada Bing over what?",
+    hint:"It involves a young woman who worked at the club…",
+    options:["Ralph skimming money from the family","Ralph disrespecting Junior Soprano","Ralph beating a young pregnant stripper named Tracee to death","Ralph sleeping with Tony's girlfriend"],
+    correct:2,
+    explanation:"Ralph beats Tracee — a pregnant young stripper at the Bada Bing — to death outside the club. Tony's fury, despite the hypocrisy, is one of the show's most morally complex scenes."
+  },
+  {
+    category:'tv', catLabel:'TV Trivia', catClass:'cat-tv',
+    text:"What is the name of Tony's manipulative mother?",
+    hint:"She's one of TV's greatest villains — a master of guilt and passive aggression…",
+    options:["Carmela Soprano","Livia Soprano","Maria Soprano","Rosa Soprano"],
+    correct:1,
+    explanation:"Livia Soprano (Nancy Marchand) is Tony's emotionally manipulative mother. She even conspires with Junior to have Tony killed. His relationship with her is the psychological center of the entire show."
+  },
+  {
+    category:'tv', catLabel:'TV Trivia', catClass:'cat-tv',
+    text:"Who is Phil Leotardo, and what role does he play in Season 6?",
+    hint:"He becomes the main antagonist and is not afraid to start a war…",
+    options:["Tony's cousin from Italy","The boss of the New York Lupertazzi crime family","An undercover FBI agent","Tony's underboss"],
+    correct:1,
+    explanation:"Phil Leotardo (Frank Vincent) becomes boss of the Lupertazzi family and the primary antagonist in Season 6. His feud with Tony drives much of the final season's plot — and ends with Phil getting spectacularly run over."
+  },
+  {
+    category:'tv', catLabel:'TV Trivia', catClass:'cat-tv',
+    text:"In what year did The Sopranos premiere on HBO?",
+    hint:"Think late '90s — Bill Clinton was still president…",
+    options:["1997","1998","1999","2000"],
+    correct:2,
+    explanation:"The Sopranos premiered on January 10, 1999, on HBO. It ran for six seasons until June 2007, widely credited with ushering in the 'Golden Age of Television.'"
+  },
+  {
+    category:'tv', catLabel:'TV Trivia', catClass:'cat-tv',
+    text:"What is the name of the pork store where Tony and the crew frequently hang out?",
+    hint:"Tony's father reportedly won it in a card game…",
+    options:["DiMeo's Meats","Satriale's Pork Store","Soprano's Deli","Gualtieri's"],
+    correct:1,
+    explanation:"Satriale's Pork Store is the crew's go-to hangout in Kearny, NJ. Tony's father reportedly won it from its owner — or cut off his finger until he handed over the deed. Depends who you ask."
+  },
+
+  /* ── QUOTE ID ───────────────────────── */
+  {
+    category:'quote', catLabel:'Quote ID', catClass:'cat-quote',
+    text:'"Those who want respect, give respect." Who said this?',
+    hint:"Think about who dishes out mob philosophy over dinner…",
+    options:["Junior Soprano","Paulie Walnuts","Bobby Baccalieri","Tony Soprano"],
+    correct:3,
+    explanation:"One of Tony's most quoted lines — a classic piece of mob philosophy delivered with total conviction and zero self-awareness about how little he follows it himself."
+  },
+  {
+    category:'quote', catLabel:'Quote ID', catClass:'cat-quote',
+    text:'"Whatever happened to Gary Cooper? The strong, silent type." Who laments the death of stoic masculinity?',
+    hint:"This person has a lot of feelings about modern men not shutting up about their feelings…",
+    options:["Christopher Moltisanti","Tony Soprano","Silvio Dante","Hesh Rabkin"],
+    correct:1,
+    explanation:"Tony says this to Dr. Melfi in Season 1, lamenting that men today cry and complain too much — without any awareness that he is doing exactly that, in therapy, right now."
+  },
+  {
+    category:'quote', catLabel:'Quote ID', catClass:'cat-quote',
+    text:'"Quasimodo predicted all this." Who says this, badly misquoting Victor Hugo?',
+    hint:"This character is famous for mangling historical references with total confidence…",
+    options:["Tony Soprano","Bobby Baccalieri","Paulie Walnuts","Christopher Moltisanti"],
+    correct:2,
+    explanation:"Paulie Walnuts says this in Season 3, completely fabricating the attribution. His garbled historical references are a running gag — he also credits 'Napoleon Dynamite' for the 'Napoleon complex.'"
+  },
+  {
+    category:'quote', catLabel:'Quote ID', catClass:'cat-quote',
+    text:'"I\'m like King Midas in reverse. Everything I touch turns to sh*t." Who says this in a moment of self-pity?',
+    hint:"He's probably saying this to his therapist…",
+    options:["Christopher Moltisanti","AJ Soprano","Junior Soprano","Tony Soprano"],
+    correct:3,
+    explanation:"Tony says this to Dr. Melfi — one of his many painfully self-aware one-liners that never quite translate into actual change. The tragedy of Tony is that he can see himself clearly and still can't stop."
+  },
+
+  /* ── EPISODE MATCHING ───────────────── */
+  {
+    category:'episode', catLabel:'Episode Matching', catClass:'cat-ep',
+    text:'"Pine Barrens" — often called the greatest episode of The Sopranos — is in which season?',
+    hint:"Paulie and Christopher chase a Russian through the snow…",
+    options:["Season 2","Season 3","Season 4","Season 5"],
+    correct:1,
+    explanation:'"Pine Barrens" is Season 3, Episode 11, directed by Steve Buscemi. Paulie and Christopher get stranded in the New Jersey woods after a confrontation with a Russian mobster who seemingly vanishes into thin air — and is never resolved.'
+  },
+  {
+    category:'episode', catLabel:'Episode Matching', catClass:'cat-ep',
+    text:"In which season does Tony Soprano kill Christopher Moltisanti?",
+    hint:"It's in the show's very final stretch…",
+    options:["Season 4","Season 5","Season 6","Season 3"],
+    correct:2,
+    explanation:'Tony smothers Christopher in Season 6, Episode 18 — "Kennedy and Heidi" — after a car crash leaves Christopher barely alive. Tony then impulsively flies to Las Vegas. One of the series\' most shocking moments.'
+  },
+  {
+    category:'episode', catLabel:'Episode Matching', catClass:'cat-ep',
+    text:"The beloved Season 1 episode 'College' is famous because Tony does what during Meadow's college tour?",
+    hint:"He spots a familiar face from his past while visiting campus…",
+    options:["He has a breakthrough in therapy with Dr. Melfi","He kills a mob informant while touring colleges with Meadow","He gets arrested by the FBI in front of Meadow","He confesses to Carmela about his affairs"],
+    correct:1,
+    explanation:"In 'College,' Tony spots Febby Petrulio — a former associate turned FBI informant — while touring Maine colleges with Meadow. He murders him in between campus tours. Celebrated for seamlessly blending suburban parenting with cold-blooded violence."
+  },
+  {
+    category:'episode', catLabel:'Episode Matching', catClass:'cat-ep',
+    text:'"Long Term Parking" features which major death that devastated fans?',
+    hint:"She's one of the show's most sympathetic characters…",
+    options:["Big Pussy","Ralph Cifaretto","Adriana La Cerva","Phil Leotardo"],
+    correct:2,
+    explanation:'"Long Term Parking" is Season 5, Episode 12. Adriana\'s death — shot by Silvio after Christopher refuses to enter witness protection with her — is one of the series\' most heartbreaking scenes.'
+  },
+  {
+    category:'episode', catLabel:'Episode Matching', catClass:'cat-ep',
+    text:"The Season 4 finale 'Whitecaps' is famous for which explosive storyline?",
+    hint:"A marriage reaches a long-brewing breaking point…",
+    options:["Tony killing a key New York capo","Tony and Carmela's screaming separation","The FBI finally arresting Tony","New York declaring open war on New Jersey"],
+    correct:1,
+    explanation:'"Whitecaps" features Tony and Carmela\'s massive, years-in-the-making confrontation that ends with Carmela kicking Tony out. Edie Falco\'s performance earned her a Primetime Emmy Award.'
+  },
+  {
+    category:'episode', catLabel:'Episode Matching', catClass:'cat-ep',
+    text:"Tony and the crew kill Big Pussy on a boat in which Season 2 episode?",
+    hint:"The episode is partly structured as a fever dream…",
+    options:["Funhouse","Knight in White Satin Armor","From Where to Eternity","House Arrest"],
+    correct:0,
+    explanation:'"Funhouse" is the Season 2 finale. Tony has elaborate fever dreams where Pussy appears as a talking fish confessing to being an FBI informant. The crew lures Pussy onto a boat, shoots him, and dumps him at sea.'
+  },
+
+  /* ── SUBREDDIT CULTURE ──────────────── */
+  {
+    category:'subreddit', catLabel:'Subreddit Culture', catClass:'cat-sub',
+    text:"What food item has become the most beloved meme on r/thesopranos?",
+    hint:"It's Italian-American cured meat with a very distinctive New Jersey pronunciation…",
+    options:["Baked ziti","Sunday gravy","Gabagool","Sfogliatelle"],
+    correct:2,
+    explanation:'"Gabagool" (capicola/capocollo) is r/thesopranos\' most iconic meme. The show popularized the thick New York/NJ Italian-American pronunciation and the subreddit turned it into a ritual greeting and inside joke.'
+  },
+  {
+    category:'subreddit', catLabel:'Subreddit Culture', catClass:'cat-sub',
+    text:"The show's famous cut to black in the finale takes place in which real NJ location?",
+    hint:"Tony orders onion rings there…",
+    options:["Satriale's Pork Store","The Bada Bing!","Holsten's diner","Tony's pool house"],
+    correct:2,
+    explanation:"The finale ends at Holsten's Diner in Bloomfield, NJ. Tony flips through the jukebox, tension builds… then cuts to black. r/thesopranos has debated the meaning of this scene ever since."
+  },
+  {
+    category:'subreddit', catLabel:'Subreddit Culture', catClass:'cat-sub',
+    text:"Which character is most commonly mocked on r/thesopranos as the show's most annoying character?",
+    hint:"His complaint about having 'no future' became something of a subreddit punchline…",
+    options:["Carmela Soprano","Janice Soprano","Meadow Soprano","A.J. Soprano"],
+    correct:3,
+    explanation:"A.J. Soprano is r/thesopranos' favorite punching bag. His teenage angst, his line 'It's too late, I have no future,' and his general ineffectualness have made him a beloved meme on the subreddit."
+  },
+  {
+    category:'subreddit', catLabel:'Subreddit Culture', catClass:'cat-sub',
+    text:"When someone asks 'Is Tony dead at the end?' on r/thesopranos, what is the most common thoughtful response?",
+    hint:"David Chase deliberately left it open…",
+    options:["'Obviously yes — the man in the Members Only jacket shot him'","'We don\\'t know — and that ambiguity is the entire point'","'David Chase confirmed he survived in a 2021 interview'","'It was all a dream — Tony died during the Season 5 coma'"],
+    correct:1,
+    explanation:"The r/thesopranos community generally embraces the ambiguity. David Chase intentionally withheld closure. The cut to black forces the audience to experience death the way Tony's victims did — sudden, with no resolution."
+  },
+];
+
+/* ═══════════════════════════════════════
+   AUDIO
+═══════════════════════════════════════ */
+// soundboard.com track IDs
+const CORRECT_IDS = [20480, 20481, 20463, 19265, 20484]; // Oh Yeah, What you gonna do, Quasimodo, Ducks, Smart Alecky
+const WRONG_IDS   = [21605, 21603, 21599];               // Oohfa (Paulie), Madon whatever, Fanabla
+
+let soundEnabled = true;
+let currentAudio = null;
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  document.getElementById('sound-btn').textContent = soundEnabled ? '🔊' : '🔇';
+  if (!soundEnabled && currentAudio) { currentAudio.pause(); currentAudio = null; }
+}
+
+function playSound(type) {
+  if (!soundEnabled) return;
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+  const ids = type === 'correct' ? CORRECT_IDS : WRONG_IDS;
+  const id  = ids[Math.floor(Math.random() * ids.length)];
+  const audio = new Audio(`https://www.soundboard.com/track/download/${id}`);
+  audio.volume = 0.75;
+  audio.play().catch(() => {}); // silently fail if blocked
+  currentAudio = audio;
+}
+
+/* ═══════════════════════════════════════
+   DAILY ROTATION — seeded shuffle
+═══════════════════════════════════════ */
+function getDailySeed() {
+  const d = new Date();
+  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+}
+
+function seededShuffle(arr, seed) {
+  const result = [...arr];
+  let s = seed;
+  for (let i = result.length - 1; i > 0; i--) {
+    s = (Math.imul(s, 1664525) + 1013904223) | 0;
+    const j = ((s >>> 0) % (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
+function getDailyNine() {
+  const seed = getDailySeed();
+  return seededShuffle(ALL_QUESTIONS, seed).slice(0, 9);
+}
+
+/* ═══════════════════════════════════════
+   REDDIT LIVE QUESTION
+═══════════════════════════════════════ */
+const REDDIT_PHRASES = [
+  { key:'gabagool',    label:'"Gabagool"',            variants:['gabagool','capicola','gabagul'] },
+  { key:'pinebarrens', label:'"Pine Barrens"',         variants:['pine barrens','pinebarrens'] },
+  { key:'ducks',       label:'The ducks',              variants:['the ducks','his ducks'] },
+  { key:'garycooper',  label:'"Gary Cooper"',           variants:['gary cooper'] },
+  { key:'holstens',    label:'Holsten\'s / cut to black',variants:['holsten','cut to black','final scene','the ending'] },
+  { key:'russian',     label:'The Russian (Pine Barrens)',variants:['the russian','valery'] },
+  { key:'madon',       label:'"Madon!"',               variants:['madon','ma don'] },
+  { key:'aj',          label:'A.J. Soprano',           variants:['a.j.','aj soprano',' aj '] },
+  { key:'melfi',       label:'Dr. Melfi',              variants:['melfi','dr melfi'] },
+  { key:'badabing',    label:'"Bada Bing"',             variants:['bada bing','the bing'] },
+  { key:'ziti',        label:'Baked ziti',             variants:['baked ziti','ziti'] },
+  { key:'paulie',      label:'Paulie Walnuts',         variants:['paulie','walnuts'] },
+  { key:'christopher', label:'Christopher Moltisanti', variants:['christopher','moltisanti'] },
+];
+
+const FALLBACK_REDDIT_Q = {
+  category:'subreddit', catLabel:'Subreddit Culture', catClass:'cat-sub', isLive:false,
+  text:"r/thesopranos regularly debates the 'Members Only' finale theory. What does it claim?",
+  hint:"It involves a man at Holsten's diner who's wearing a very specific jacket…",
+  options:[
+    "Tony faked his death and the finale is set years later",
+    "The man in the Members Only jacket is a hitman sent by NY — and Tony is killed",
+    "The finale is entirely AJ's dream sequence",
+    "Tony survives but Meadow is shot instead"
+  ],
+  correct:1,
+  explanation:"The 'Members Only' theory holds that the man in the Members Only jacket at Holsten's is the hitman who kills Tony — referencing Eugene Pontecorvo, who wore one before dying. The cut to black is Tony's POV going dark. One of the most debated theories on r/thesopranos."
+};
+
+function countPhrase(text, variants) {
+  let count = 0;
+  const lower = text.toLowerCase();
+  variants.forEach(v => {
+    let start = 0;
+    while (true) {
+      const idx = lower.indexOf(v.toLowerCase(), start);
+      if (idx === -1) break;
+      count++;
+      start = idx + 1;
+    }
+  });
+  return count;
+}
+
+async function fetchRedditQuestion() {
+  try {
+    const res = await fetch(
+      'https://www.reddit.com/r/thesopranos/hot.json?limit=100&raw_json=1',
+      { headers: { 'Accept': 'application/json' }, signal: AbortSignal.timeout(6000) }
+    );
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const posts = data.data.children;
+
+    // Count each phrase across all post titles + selftexts
+    const counts = {};
+    REDDIT_PHRASES.forEach(p => counts[p.key] = 0);
+    posts.forEach(post => {
+      const text = (post.data.title || '') + ' ' + (post.data.selftext || '');
+      REDDIT_PHRASES.forEach(p => {
+        counts[p.key] += countPhrase(text, p.variants);
+      });
+    });
+
+    // Sort by count
+    const sorted = [...REDDIT_PHRASES].sort((a, b) => counts[b.key] - counts[a.key]);
+    const top = sorted.find(p => counts[p.key] > 0);
+    if (!top) return null;
+
+    // Build question: correct = most mentioned, 3 random others as decoys
+    const decoys = sorted.filter(p => p.key !== top.key).slice(0, 3);
+    const allOpts = [top, ...decoys].sort(() => Math.random() - 0.5);
+    const correctIdx = allOpts.findIndex(p => p.key === top.key);
+
+    return {
+      category:'subreddit', catLabel:'Live Reddit', catClass:'cat-live', isLive:true,
+      text:"Based on today's posts on r/thesopranos — which phrase or topic appeared most frequently?",
+      hint:`Analyzed the top ${posts.length} posts on r/thesopranos as of ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric'})}`,
+      options: allOpts.map(p => p.label),
+      correct: correctIdx,
+      explanation:`"${top.label}" appeared ${counts[top.key]} time(s) in today's top posts on r/thesopranos. ${
+        counts[top.key] > 5 ? "The community is clearly obsessed right now." : "Even a few mentions puts it ahead of the pack today."
+      }`
+    };
+  } catch (e) {
+    console.warn('Reddit fetch failed:', e.message);
+    return null;
+  }
+}
+
+/* ═══════════════════════════════════════
+   QUIZ STATE
+═══════════════════════════════════════ */
+let quizQuestions  = [];
+let currentQ       = 0;
+let score          = 0;
+let answered       = false;
+let catScores      = { tv:[0,0], quote:[0,0], episode:[0,0], subreddit:[0,0] };
+let redditQPromise = null;
+
+/* ── Screen helper ── */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* ── START ── */
+async function startQuiz() {
+  score = 0; currentQ = 0; answered = false;
+  catScores = { tv:[0,0], quote:[0,0], episode:[0,0], subreddit:[0,0] };
+
+  const dailyNine = getDailyNine();
+
+  // Start fetching Reddit immediately, but don't block the quiz start
+  redditQPromise = fetchRedditQuestion();
+
+  quizQuestions = [...dailyNine, null]; // slot 10 = Reddit (loaded async)
+  showScreen('quiz');
+  renderQuestion();
+}
+
+/* ── RENDER ── */
+async function renderQuestion() {
+  answered = false;
+  document.getElementById('feedback').className = 'feedback';
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('next-btn').style.display = 'none';
+
+  const total = quizQuestions.length;
+  document.getElementById('q-counter').textContent    = `Question ${currentQ + 1} of ${total}`;
+  document.getElementById('q-score-live').textContent = `Score: ${score}`;
+  document.getElementById('progress-bar').style.width = `${(currentQ / total) * 100}%`;
+
+  // If this is the last question (Reddit slot), await the fetch
+  if (currentQ === 9 && quizQuestions[9] === null) {
+    showLoadingState();
+    const redditQ = await redditQPromise;
+    quizQuestions[9] = redditQ || FALLBACK_REDDIT_Q;
+  }
+
+  const q = quizQuestions[currentQ];
+  const catEl = document.getElementById('q-category');
+  catEl.textContent  = q.catLabel;
+  catEl.className    = 'q-category ' + q.catClass;
+
+  const liveBadge = document.getElementById('live-badge');
+  liveBadge.style.display = q.isLive ? 'flex' : 'none';
+
+  document.getElementById('q-text').textContent = q.text;
+  const hintEl = document.getElementById('q-hint');
+  hintEl.textContent    = q.hint || '';
+  hintEl.style.display  = q.hint ? 'block' : 'none';
+
+  const optWrap = document.getElementById('options');
+  optWrap.innerHTML = '';
+  const letters = ['A','B','C','D'];
+  q.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.innerHTML = `<span class="option-letter">${letters[i]}</span><span>${opt}</span>`;
+    btn.onclick = () => selectAnswer(i, btn);
+    optWrap.appendChild(btn);
+  });
+}
+
+function showLoadingState() {
+  const card = document.getElementById('question-card');
+  document.getElementById('q-category').textContent = 'Live Reddit';
+  document.getElementById('q-category').className   = 'q-category cat-live';
+  document.getElementById('live-badge').style.display = 'flex';
+  document.getElementById('q-text').innerHTML = '<div class="loading-overlay"><div class="loading-spinner"></div><div class="loading-text">Pulling today\'s question from r/thesopranos…</div></div>';
+  document.getElementById('q-hint').style.display = 'none';
+  document.getElementById('options').innerHTML = '';
+}
+
+/* ── SELECT ANSWER ── */
+function selectAnswer(idx, clickedBtn) {
+  if (answered) return;
+  answered = true;
+
+  const q     = quizQuestions[currentQ];
+  const isOk  = idx === q.correct;
+  const allBtns = document.querySelectorAll('.option-btn');
+
+  // Track category
+  const cat = q.category === 'subreddit' || q.catClass === 'cat-live' ? 'subreddit' : q.category;
+  if (catScores[cat]) {
+    catScores[cat][1]++;
+    if (isOk) catScores[cat][0]++;
+  }
+  if (isOk) score++;
+
+  // Style buttons
+  allBtns.forEach((btn, i) => {
+    btn.disabled = true;
+    if (i === q.correct) btn.classList.add(idx === q.correct ? 'correct' : 'reveal');
+    if (i === idx && !isOk) btn.classList.add('wrong');
+  });
+
+  // Feedback
+  const fb = document.getElementById('feedback');
+  fb.className = 'feedback ' + (isOk ? 'correct' : 'wrong');
+  fb.textContent = isOk ? q.explanation : 'Not quite. ' + q.explanation;
+
+  document.getElementById('q-score-live').textContent = `Score: ${score}`;
+  document.getElementById('next-btn').style.display   = 'inline-block';
+  document.getElementById('next-btn').textContent     = currentQ < quizQuestions.length - 1 ? 'Next Question →' : 'See My Results →';
+
+  // Play sound
+  playSound(isOk ? 'correct' : 'wrong');
+}
+
+/* ── NEXT ── */
+function nextQuestion() {
+  currentQ++;
+  if (currentQ >= quizQuestions.length) showResults();
+  else renderQuestion();
+}
+
+/* ── RESULTS ── */
+function showResults() {
+  showScreen('results');
+  document.getElementById('progress-bar').style.width = '100%';
+
+  const pct = score / quizQuestions.length;
+  let rank, desc;
+  if (pct === 1)       { rank = "Boss of All Bosses";  desc = "Perfetto. You know the show inside out and you've clearly been deep in r/thesopranos. Tony himself would pour you a drink. Probably drugged, but still." }
+  else if (pct >= 0.8) { rank = "Capo";                desc = "Excellent work. You know your gabagool from your sfogliatelle and can quote Tony in your sleep. One or two blind spots — but nobody's perfect except maybe Paulie." }
+  else if (pct >= 0.6) { rank = "Soldier";             desc = "Not bad, not great. You know the show well enough to get your button, but there are some gaps. Re-watch Pine Barrens, spend more time on r/thesopranos." }
+  else if (pct >= 0.4) { rank = "Associate";           desc = "You've got some Sopranos knowledge but you're not getting made anytime soon. Tony would say you've got potential. Start binge-watching." }
+  else                 { rank = "FBI Informant";       desc = "Whadda ya know? Not much. Start with Season 1, head over to r/thesopranos, and don't come back until you can explain Pine Barrens." }
+
+  document.getElementById('result-rank').textContent     = rank;
+  document.getElementById('result-score-num').textContent = score;
+  document.getElementById('result-desc').textContent     = desc;
+
+  const cats = [
+    { key:'tv',       label:'📺 TV Trivia' },
+    { key:'quote',    label:'💬 Quote ID' },
+    { key:'episode',  label:'🎬 Episodes' },
+    { key:'subreddit',label:'🌐 Subreddit' },
+  ];
+  document.getElementById('result-breakdown').innerHTML = cats.map(c => {
+    const [got, tot] = catScores[c.key];
+    return `<div class="breakdown-item">
+      <div class="breakdown-cat">${c.label}</div>
+      <div class="breakdown-score">${got}<span> / ${tot}</span></div>
+    </div>`;
+  }).join('');
+}
+
+/* ── RESTART ── */
+function restartQuiz() { startQuiz(); }
+</script>
+</body>
+</html>
